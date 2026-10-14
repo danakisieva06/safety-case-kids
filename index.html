@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кейс: Моё тело — моя крепость!</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f0f8ff; color: #333; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); flex-wrap: wrap; gap: 10px; }
+        .card { display: none; background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .case-icon { 
+            width: 200px; 
+            height: 200px; 
+            margin: 0 auto 20px; 
+            display: block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            padding: 30px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        .case-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: white;
+        }
+
+        button { padding: 12px 20px; margin: 8px 5px; cursor: pointer; border: 2px solid #4a90e2; background: #fff; color: #4a90e2; border-radius: 6px; font-size: 1rem; transition: all 0.2s; text-align: left; width: 100%; }
+        button:hover:not(:disabled) { background: #4a90e2; color: white; }
+        button.selected { background: #357abd; color: white; border-color: #357abd; }
+        button.correct { background: #28a745 !important; color: white !important; border-color: #28a745 !important; }
+        button.wrong { background: #dc3545 !important; color: white !important; border-color: #dc3545 !important; }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+        
+        .btn-check { background: #28a745; color: white; border-color: #28a745; font-weight: bold; margin-top: 15px; display: block; width: 100%; text-align: center; }
+        .btn-check:hover:not(:disabled) { background: #218838; }
+        .btn-reset { border-color: #dc3545; color: #dc3545; text-align: center; }
+        .btn-reset:hover { background: #dc3545; color: white; }
+        .btn-next { background: #17a2b8; color: white; border-color: #17a2b8; font-weight: bold; margin-top: 20px; display: block; width: 100%; text-align: center; }
+        .btn-next:hover { background: #138496; }
+        
+        .btn-continue { 
+            background: #4a90e2; 
+            color: white; 
+            border-color: #4a90e2; 
+            font-weight: bold; 
+            margin-top: 20px; 
+            display: none; 
+            width: 100%; 
+            text-align: center;
+            font-size: 1.1rem;
+            padding: 15px 20px;
+            animation: pulse 1.5s infinite;
+        }
+        .btn-continue.show {
+            display: block;
+        }
+        .btn-continue:hover { background: #357abd; }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        #mute-toggle { font-size: 1.5rem; background: none; border: none; cursor: pointer; padding: 5px; }
+        #voice-select { padding: 5px 10px; border-radius: 4px; border: 1px solid #ccc; font-size: 0.9rem; max-width: 200px; }
+        #certificate { text-align: center; border: 3px solid #ffd700; background: #fffdf0; }
+        #cert-name { color: #4a90e2; font-size: 1.8rem; margin: 10px 0; }
+        
+        .situation { background: #e3f2fd; padding: 15px; border-radius: 6px; margin-bottom: 15px; border-left: 4px solid #4a90e2; }
+        .discussion { background: #fff3cd; padding: 15px; border-radius: 6px; margin-top: 15px; border-left: 4px solid #ffc107; }
+        .rule-box { background: #d4edda; padding: 15px; border-radius: 6px; margin-top: 15px; border-left: 4px solid #28a745; font-weight: bold; }
+        
+        .explanation { 
+            background: #f8d7da; 
+            padding: 20px; 
+            border-radius: 6px; 
+            margin-top: 20px; 
+            border-left: 5px solid #dc3545; 
+            display: none;
+            animation: slideIn 0.5s ease-in-out;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+        .explanation.show {
+            display: block;
+        }
+        .explanation strong {
+            color: #721c24;
+            font-size: 1.1rem;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .cert-icon {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="margin: 0;">🛡️ Моё тело — моя крепость!</h2>
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <span style="font-size: 1.1rem;">Счет: <strong id="score" style="color: #4a90e2;">0</strong></span>
+            <select id="voice-select" title="Выберите голос для озвучки"></select>
+            <button id="mute-toggle" onclick="toggleMute()" title="Включить/выключить звук">🔊</button>
+        </div>
+    </div>
+
+    <audio id="correct-sound" src="https://actions.google.com/sounds/v1/cartoon/pop.ogg"></audio>
+    <audio id="wrong-sound" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+
+    <div id="stage-0" class="card" style="display: block;">
+        <h2>Привет, будущий эксперт! 👋</h2>
+        <div class="case-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+        </div>
+        <p>Сегодня мы поговорим об очень важном правиле: <strong>твоё тело принадлежит только тебе!</strong> Ты — главный хозяин или хозяйка своего тела.</p>
+        <p>Давай поможем восьмилетнему Ване разобраться в нескольких ситуациях и станем настоящими Экспертами по безопасности.</p>
+        <button onclick="renderStage('1')" style="font-size: 1.1rem; font-weight: bold;">Начать обучение</button>
+        <br>
+        <button class="btn-reset" onclick="restartGame()">Сбросить прогресс</button>
+    </div>
+
+    <div id="stage-1" class="card">
+        <h2>Задание 1: «Правило купальника»</h2>
+        <div class="case-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="situation">
+            <p>Ваня с семьёй поехал в бассейн. После купания к нему подошёл тренер, которого он видит второй раз, и сказал: <em>«Ваня, давай я помогу тебе переодеться, зайдём в отдельную кабинку, я покажу тебе один секретный приём».</em></p>
+        </div>
+        <p><strong>Как правильно поступить Ване?</strong></p>
+        <button data-answer="A" onclick="checkSingleAnswer(1, 'A', 'B')">А. Пойти с тренером — он же взрослый и знает лучше.</button>
+        <button data-answer="B" onclick="checkSingleAnswer(1, 'B', 'B')">Б. Громко сказать «НЕТ! Я переоденусь сам» и сразу пойти к родителям.</button>
+        <button data-answer="C" onclick="checkSingleAnswer(1, 'C', 'B')">В. Пойти, но потом рассказать маме.</button>
+        <div class="explanation" id="explanation-1">
+            <strong>💡 Почему так?</strong><br>
+            Места, закрытые купальником — только твои! Никто не имеет права их трогать или просить показать, кроме врача в присутствии родителей. Если взрослый просит уединиться или хранить секрет — это «красный флажок». Нужно сразу сказать «НЕТ» и рассказать родителям.
+        </div>
+        <button class="btn-continue" id="continue-1" onclick="renderStage(2)">Продолжить ➜</button>
+    </div>
+
+    <div id="stage-2" class="card">
+        <h2>Задание 2: Хорошие и плохие секреты</h2>
+        <div class="case-icon">
+            <svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1 0-1.66-1.34-3-3-3-1.05 0-1.96.54-2.5 1.35l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z"/></svg>
+        </div>
+        <div class="situation">
+            <p>Дядя Петя, сосед по лестничной клетке, часто угощает Ваню конфетами. Однажды он дал ему большую шоколадку и сказал: <em>«Только это наш с тобой секрет. Маме не говори, а то она запретит тебе ко мне приходить».</em></p>
+        </div>
+        <p>Выбери <strong>ВСЕ</strong> правильные действия:</p>
+        <button class="toggle-select" data-correct="true">Рассказать маме о подарке и о просьбе молчать.</button>
+        <button class="toggle-select" data-correct="true">Понять, что это «плохой» секрет — его нельзя хранить.</button>
+        <button class="toggle-select" data-correct="false">Съесть шоколадку и промолчать.</button>
+        <button class="toggle-select" data-correct="false">Подумать, что он плохой мальчик, раз рассказывает.</button>
+        <br>
+        <button class="btn-check" id="check-2" onclick="verifyMultipleChoice('2', '3')">Проверить ответ</button>
+        <div class="explanation" id="explanation-2">
+            <strong>💡 Почему так?</strong><br>
+            Есть хорошие секреты (подарок на день рождения) — они радостные и временные. А есть «плохие» секреты — от них тревожно, и просят молчать от родителей. Такие секреты хранить НЕЛЬЗЯ! Нужно обязательно рассказать взрослому, которому доверяешь.
+        </div>
+        <button class="btn-continue" id="continue-2" onclick="renderStage(3)">Продолжить ➜</button>
+    </div>
+
+    <div id="stage-3" class="card">
+        <h2>Задание 3: Твоё тело — твои правила</h2>
+        <div class="case-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        </div>
+        <div class="situation">
+            <p>На семейном празднике тётя Люба (дальняя родственница, которую Ваня видит раз в год) хочет его поцеловать в щёку и обнять. Ване неприятно — он не хочет.</p>
+        </div>
+        <p>Выбери <strong>ВСЕ</strong> верные утверждения:</p>
+        <button class="toggle-select" data-correct="true">Да, Ваня имеет право не обниматься и не целоваться.</button>
+        <button class="toggle-select" data-correct="true">Он может вежливо сказать: «Нет, спасибо, я не хочу».</button>
+        <button class="toggle-select" data-correct="true">Его чувства важнее, чем чужие обиды.</button>
+        <button class="toggle-select" data-correct="false">Он должен потерпеть, чтобы не обидеть взрослую.</button>
+        <button class="toggle-select" data-correct="false">Родители должны заставлять его обниматься.</button>
+        <br>
+        <button class="btn-check" id="check-3" onclick="verifyMultipleChoice('3', '4')">Проверить ответ</button>
+        <div class="explanation" id="explanation-3">
+            <strong>💡 Почему так?</strong><br>
+            Ты — главный хозяин своего тела! Ты имеешь право сказать «нет» любым прикосновениям, даже если это родственник. Твои чувства важнее чужих обид. Вежливый отказ — это нормально и правильно.
+        </div>
+        <button class="btn-continue" id="continue-3" onclick="renderStage(4)">Продолжить ➜</button>
+    </div>
+
+    <div id="stage-4" class="card">
+        <h2>Задание 4: Тревожные сигналы</h2>
+        <div class="case-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <svg viewBox="0 0 24 24"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+        </div>
+        <div class="situation">
+            <p>Ваня играет во дворе. К нему подходит незнакомый мужчина и говорит: <em>«Привет, малыш! У меня дома есть маленькие котята, хочешь посмотреть? Пойдём со мной, это рядом».</em></p>
+        </div>
+        <p>Отметь <strong>ВСЕ</strong> «красные флажки» — фразы, которые должны насторожить:</p>
+        <button class="toggle-select" data-correct="true">«Пойдём со мной»</button>
+        <button class="toggle-select" data-correct="true">«У меня есть кое-что интересное, только тебе покажу»</button>
+        <button class="toggle-select" data-correct="true">«Это будет наш секрет»</button>
+        <button class="toggle-select" data-correct="true">«Не говори родителям, они не разрешат»</button>
+        <button class="toggle-select" data-correct="false">«Как тебя зовут? Ты тут с мамой?»</button>
+        <br>
+        <button class="btn-check" id="check-4" onclick="verifyMultipleChoice('4', '5')">Проверить ответ</button>
+        <div class="explanation" id="explanation-4">
+            <strong>💡 Почему так?</strong><br>
+            Взрослые, которые хотят причинить вред, часто используют «крючки»: угощения, котята, игрушки, просьбы о секрете. Фразы «пойдём со мной», «это наш секрет», «не говори родителям» — это «красные флажки». Нужно сразу УЙТИ и рассказать взрослым.
+        </div>
+        <button class="btn-continue" id="continue-4" onclick="renderStage(5)">Продолжить ➜</button>
+    </div>
+
+    <div id="stage-5" class="card">
+        <h2>Задание 5: Кто такие «надежные взрослые»?</h2>
+        <div class="case-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="situation">
+            <p>«Круг доверия» — это список взрослых, которым можно рассказать о любой неприятной ситуации. У каждого ребёнка этот список свой.</p>
+        </div>
+        <p>Выбери <strong>ВСЕХ</strong>, кто <strong>может быть</strong> частью такого круга надёжных взрослых:</p>
+        <button class="toggle-select" data-correct="true">Мама или папа</button>
+        <button class="toggle-select" data-correct="true">Бабушка или дедушка, которым ты доверяешь</button>
+        <button class="toggle-select" data-correct="true">Учитель в школе или школьный психолог</button>
+        <button class="toggle-select" data-correct="false">Незнакомый человек в парке или в интернете</button>
+        <button class="toggle-select" data-correct="false">Старший подросток, которого ты видишь первый раз</button>
+        <br>
+        <button class="btn-check" id="check-5" onclick="verifyMultipleChoice('5', '6')">Проверить ответ</button>
+        <div class="explanation" id="explanation-5">
+            <strong>💡 Почему так?</strong><br>
+            Родители и близкие родственники — это основа «Круга доверия». Но также надёжными взрослыми <strong>могут быть</strong> учитель или школьный психолог, так как они обязаны защищать детей.
+            <br><br>
+            <strong>Важное правило:</strong> если один взрослый не поверил или сказал «не выдумывай» — иди к другому из своего списка. Говори, пока тебя не услышат! Это не ябедничество — это защита себя.
+        </div>
+        <button class="btn-continue" id="continue-5" onclick="renderStage(6)">Продолжить ➜</button>
+    </div>
+
+    <div id="stage-6" class="card">
+        <h2>Задание 6: Супер-правило из трёх шагов</h2>
+        <div class="case-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+            <svg viewBox="0 0 24 24"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        </div>
+        <p>Представь, что кто-то делает то, что тебе неприятно или пугает. Выбери <strong>ВСЕ</strong> правильные шаги:</p>
+        <button class="toggle-select" data-correct="true">Скажи громко «НЕТ! ОТОЙДИ! МНЕ НЕПРИЯТНО!»</button>
+        <button class="toggle-select" data-correct="true">Уйди в безопасное место (к родителям, учителям, в людное место).</button>
+        <button class="toggle-select" data-correct="true">Расскажи доверенному взрослому.</button>
+        <button class="toggle-select" data-correct="false">Сначала попробуй договориться или объяснить этому человеку.</button>
+        <br>
+        <button class="btn-check" id="check-6" onclick="verifyMultipleChoice('6', '7')">Проверить ответ</button>
+        <div class="explanation" id="explanation-6">
+            <strong>💡 Почему так?</strong><br>
+            Запомни три шага, как супер-силу: <strong>НЕТ → УЙДИ → РАССКАЖИ</strong>. Не нужно договариваться или объяснять — это опасно. Сразу скажи «НЕТ», уйди в безопасное место и расскажи взрослому, которому доверяешь.
+        </div>
+        <button class="btn-continue" id="continue-6" onclick="renderStage(7)">Продолжить ➜</button>
+    </div>
+
+    <div id="stage-7" class="card">
+        <h2>Задание 7: Это не твоя вина</h2>
+        <div class="case-icon" style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <div class="situation">
+            <p>Ваня рассказал маме, что дядя Петя просил его хранить секрет. Мама расстроилась, но обняла Ваню и сказала: «Спасибо, что рассказал. Ты поступил правильно».</p>
+        </div>
+        <p><strong>Кто виноват в том, что произошло?</strong></p>
+        <button data-answer="A" onclick="checkSingleAnswer(7, 'A', 'C')">А. Ваня — потому что взял конфету.</button>
+        <button data-answer="B" onclick="checkSingleAnswer(7, 'B', 'C')">Б. Ваня — потому что не сразу рассказал.</button>
+        <button data-answer="C" onclick="checkSingleAnswer(7, 'C', 'C')">В. Дядя Петя. В таких ситуациях ребёнок НИКОГДА не виноват.</button>
+        <div class="explanation" id="explanation-7">
+            <strong>💡 Почему так?</strong><br>
+            В таких ситуациях ребёнок НИКОГДА не виноват! Виноват всегда взрослый, который нарушил правила безопасности. Что бы ни случилось — ты не виноват. Главное — рассказать доверенному взрослому как можно скорее.
+        </div>
+        <button class="btn-continue" id="continue-7" onclick="renderStage(8)">Продолжить ➜</button>
+    </div>
+
+    <div id="stage-8" class="card">
+        <h2>🌟 Ты молодец! 🌟</h2>
+        <div class="case-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <p>Ты отлично справился со всеми заданиями! Давай повторим <strong>4 главных правила</strong>:</p>
+        <ol>
+            <li>🛡️ <strong>Моё тело — только моё.</strong> Места под купальником никто не трогает.</li>
+            <li>🗣️ <strong>Я имею право сказать «НЕТ»</strong> любому, кто нарушает мои границы.</li>
+            <li>🤫 <strong>Плохие секреты нужно рассказывать</strong> — обязательно и сразу.</li>
+            <li>👨‍👩‍👧 <strong>Если не услышал один взрослый — иди к другому.</strong></li>
+        </ol>
+        
+        <div class="discussion">
+            <strong>🏠 Домашнее задание (вместе с родителями):</strong>
+            <ol>
+                <li>Нарисуй свой «Круг доверия» — 5 взрослых, которым ты можешь рассказать что угодно.</li>
+                <li>Придумайте «семейный пароль» — слово, которое знает только ваша семья.</li>
+                <li>Обсуди с родителями: «Что делать, если я потерялся?»</li>
+            </ol>
+        </div>
+        
+        <button class="btn-next" onclick="showCertificate()">Получить сертификат Эксперта</button>
+    </div>
+
+    <div id="stage-certificate" class="card">
+        <h2>🏆 Сертификат Эксперта 🏆</h2>
+        <div class="case-icon cert-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        </div>
+        <p>Настоящим подтверждается, что</p>
+        <h3 id="cert-name">Эксперт</h3>
+        <p>знает правила безопасности, умеет защищать свои границы и стал <strong>настоящим Экспертом по безопасности тела!</strong></p>
+        <p>Дата: <span id="cert-date"></span></p>
+        <p>Счет: <strong id="cert-score" style="color: #28a745; font-size: 1.2rem;"></strong></p>
+        <button onclick="restartGame()" style="margin-top: 20px; text-align: center;">Пройти еще раз</button>
+    </div>
+
+    <script>
+        let state = { score: 0, isMuted: false, currentStage: '0', name: "Эксперт", selectedVoice: "" };
+        const STORAGE_KEYS = { SCORE: 'safety_body_score', STAGE: 'safety_body_stage', NAME: 'safety_body_name', MUTED: 'safety_body_muted', VOICE: 'safety_body_voice' };
+        const dom = { scoreEl: null, muteBtn: null, voiceSelect: null, correctSound: null, wrongSound: null };
+
+        const SOFT_VOICE_NAMES = ['irina', 'svetlana', 'milena', 'alyona', 'alena', 'jane', 'alyss', 'tatyana', 'katya', 'anna', 'maria', 'elena'];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            dom.scoreEl = document.getElementById('score');
+            dom.muteBtn = document.getElementById('mute-toggle');
+            dom.voiceSelect = document.getElementById('voice-select');
+            dom.correctSound = document.getElementById('correct-sound');
+            dom.wrongSound = document.getElementById('wrong-sound');
+
+            loadProgress();
+            renderStage(state.currentStage);
+            
+            if (window.speechSynthesis) {
+                window.speechSynthesis.getVoices(); 
+                window.speechSynthesis.onvoiceschanged = populateVoiceList;
+                populateVoiceList();
+            }
+
+            if (!localStorage.getItem(STORAGE_KEYS.NAME)) {
+                askForName();
+            } else {
+                speak(`Привет, ${state.name}! Добро пожаловать.`);
+            }
+        });
+
+        function isSoftVoice(voice) {
+            const nameLower = voice.name.toLowerCase();
+            return SOFT_VOICE_NAMES.some(n => nameLower.includes(n));
+        }
+
+        function populateVoiceList() {
+            if (!window.speechSynthesis) return;
+            const voices = window.speechSynthesis.getVoices().filter(v => v.lang.includes('ru'));
+            dom.voiceSelect.innerHTML = '';
+            
+            const sortedVoices = [...voices].sort((a, b) => {
+                const aSoft = isSoftVoice(a);
+                const bSoft = isSoftVoice(b);
+                if (aSoft && !bSoft) return -1;
+                if (!aSoft && bSoft) return 1;
+                return 0;
+            });
+
+            sortedVoices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                const softMark = isSoftVoice(voice) ? ' 🌸' : '';
+                option.textContent = `${voice.name} (${voice.lang})${softMark}`;
+                dom.voiceSelect.appendChild(option);
+            });
+
+            if (sortedVoices.length > 0) {
+                if (state.selectedVoice && voices.find(v => v.name === state.selectedVoice)) {
+                    dom.voiceSelect.value = state.selectedVoice;
+                } else {
+                    const softVoice = sortedVoices.find(v => isSoftVoice(v));
+                    dom.voiceSelect.value = softVoice ? softVoice.name : sortedVoices[0].name;
+                    state.selectedVoice = dom.voiceSelect.value;
+                }
+            }
+        }
+
+        function saveProgress() {
+            localStorage.setItem(STORAGE_KEYS.SCORE, state.score);
+            localStorage.setItem(STORAGE_KEYS.STAGE, state.currentStage);
+            localStorage.setItem(STORAGE_KEYS.NAME, state.name);
+            localStorage.setItem(STORAGE_KEYS.MUTED, state.isMuted);
+            localStorage.setItem(STORAGE_KEYS.VOICE, state.selectedVoice);
+        }
+
+        function loadProgress() {
+            const savedScore = localStorage.getItem(STORAGE_KEYS.SCORE);
+            const savedStage = localStorage.getItem(STORAGE_KEYS.STAGE);
+            const savedName = localStorage.getItem(STORAGE_KEYS.NAME);
+            const savedMuted = localStorage.getItem(STORAGE_KEYS.MUTED);
+            const savedVoice = localStorage.getItem(STORAGE_KEYS.VOICE);
+
+            if (savedScore !== null) state.score = parseInt(savedScore, 10);
+            if (savedStage !== null) state.currentStage = savedStage;
+            if (savedName !== null) state.name = savedName;
+            if (savedMuted !== null) state.isMuted = (savedMuted === 'true');
+            if (savedVoice !== null) state.selectedVoice = savedVoice;
+
+            if (dom.scoreEl) dom.scoreEl.textContent = state.score;
+            if (dom.muteBtn) updateMuteUI();
+        }
+
+        function clearProgress() {
+            Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key));
+        }
+
+        function speak(text) {
+            if (state.isMuted || !window.speechSynthesis) return;
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ru-RU';
+            utterance.rate = 0.88;
+            utterance.pitch = 0.95;
+            utterance.volume = 1.0;
+            
+            const voices = window.speechSynthesis.getVoices();
+            const voiceToUse = voices.find(v => v.name === state.selectedVoice) || 
+                               voices.find(v => isSoftVoice(v)) || 
+                               voices.find(v => v.lang.includes('ru'));
+            if (voiceToUse) utterance.voice = voiceToUse;
+            window.speechSynthesis.speak(utterance);
+        }
+
+        if (dom.voiceSelect) {
+            dom.voiceSelect.addEventListener('change', (e) => {
+                state.selectedVoice = e.target.value;
+                saveProgress();
+                speak("Голос изменён. Теперь я буду говорить так.");
+            });
+        }
+
+        function toggleMute() {
+            state.isMuted = !state.isMuted;
+            updateMuteUI();
+            saveProgress();
+            if (state.isMuted && window.speechSynthesis) window.speechSynthesis.cancel();
+        }
+
+        function updateMuteUI() {
+            if (!dom.muteBtn) return;
+            if (state.isMuted) {
+                dom.muteBtn.innerHTML = '🔇';
+                dom.muteBtn.classList.add('muted');
+                dom.muteBtn.title = 'Звук выключен';
+            } else {
+                dom.muteBtn.innerHTML = '🔊';
+                dom.muteBtn.classList.remove('muted');
+                dom.muteBtn.title = 'Включить звук';
+            }
+            if (dom.correctSound) dom.correctSound.muted = state.isMuted;
+            if (dom.wrongSound) dom.wrongSound.muted = state.isMuted;
+        }
+
+        function playSound(isCorrect) {
+            if (state.isMuted) return;
+            const sound = isCorrect ? dom.correctSound : dom.wrongSound;
+            if (sound) {
+                sound.pause();
+                sound.currentTime = 0;
+                sound.play().catch(e => console.warn("Автовоспроизведение звука заблокировано:", e));
+            }
+        }
+
+        // ✅ ИСПРАВЛЕНО: убрана озвучка счёта, чтобы не прерывать другие фразы
+        function updateScore(points) {
+            state.score += points;
+            if (dom.scoreEl) dom.scoreEl.textContent = state.score;
+            saveProgress();
+        }
+
+        function renderStage(stageId) {
+            state.currentStage = stageId;
+            document.querySelectorAll('.card').forEach(el => el.style.display = 'none');
+            const stageEl = document.getElementById(`stage-${stageId}`);
+            if (stageEl) {
+                stageEl.style.display = 'block';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+            saveProgress();
+        }
+
+        function showExplanation(stageId, explanationText) {
+            const explanation = document.getElementById(`explanation-${stageId}`);
+            const continueBtn = document.getElementById(`continue-${stageId}`);
+            
+            if (explanation) explanation.classList.add('show');
+            if (continueBtn) continueBtn.classList.add('show');
+            
+            if (explanationText) {
+                setTimeout(() => speak(explanationText), 400);
+            }
+        }
+
+        function verifyMultipleChoice(stageId, successStageId) {
+            const stageEl = document.getElementById(`stage-${stageId}`);
+            if (!stageEl) return;
+            const buttons = stageEl.querySelectorAll('button.toggle-select');
+            const correctButtons = stageEl.querySelectorAll('button[data-correct="true"]');
+            let selectedCorrectCount = 0;
+            let selectedWrongCount = 0;
+
+            buttons.forEach(btn => {
+                const isSelected = btn.classList.contains('selected');
+                const isCorrect = btn.getAttribute('data-correct') === 'true';
+                if (isSelected && isCorrect) selectedCorrectCount++;
+                if (isSelected && !isCorrect) selectedWrongCount++;
+            });
+
+            const totalCorrect = correctButtons.length;
+            const checkBtn = document.getElementById(`check-${stageId}`);
+            
+            if (selectedCorrectCount === totalCorrect && selectedWrongCount === 0 && totalCorrect > 0) {
+                playSound(true);
+                updateScore(20);
+                speak(`Правильно! Ты молодец.`);
+                
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    const isCorrect = btn.getAttribute('data-correct') === 'true';
+                    if (isCorrect) btn.classList.add('correct');
+                });
+                
+                if (checkBtn) checkBtn.style.display = 'none';
+                
+                const explanationText = document.getElementById(`explanation-${stageId}`)?.innerText || '';
+                showExplanation(stageId, explanationText);
+                
+            } else {
+                playSound(false);
+                speak("Не совсем так. Посмотри правильный ответ и запомни правило.");
+                
+                buttons.forEach(btn => {
+                    const isSelected = btn.classList.contains('selected');
+                    const isCorrect = btn.getAttribute('data-correct') === 'true';
+                    
+                    if (isSelected && !isCorrect) btn.classList.add('wrong');
+                    else if (!isSelected && isCorrect) btn.classList.add('correct');
+                    else if (isSelected && isCorrect) btn.classList.add('correct');
+                    btn.disabled = true;
+                });
+                
+                if (checkBtn) checkBtn.style.display = 'none';
+                
+                const explanationText = document.getElementById(`explanation-${stageId}`)?.innerText || '';
+                showExplanation(stageId, explanationText);
+            }
+        }
+
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('button.toggle-select');
+            if (btn && !btn.disabled) {
+                btn.classList.toggle('selected');
+            }
+        });
+
+        function checkSingleAnswer(stage, selectedAnswer, correctAnswer) {
+            const isCorrect = (selectedAnswer === correctAnswer);
+            playSound(isCorrect);
+
+            const buttons = document.querySelectorAll(`#stage-${stage} button[data-answer]`);
+            const selectedBtn = document.querySelector(`#stage-${stage} button[data-answer="${selectedAnswer}"]`);
+            const correctBtn = document.querySelector(`#stage-${stage} button[data-answer="${correctAnswer}"]`);
+
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (isCorrect) {
+                updateScore(20);
+                speak("Абсолютно верно! Ты знаешь, как себя защитить.");
+                selectedBtn.classList.add('correct');
+            } else {
+                speak("Не совсем так. Посмотри правильный ответ и запомни правило.");
+                selectedBtn.classList.add('wrong');
+                correctBtn.classList.add('correct');
+            }
+            
+            const explanationText = document.getElementById(`explanation-${stage}`)?.innerText || '';
+            showExplanation(stage, explanationText);
+        }
+
+        function showCertificate() {
+            renderStage('certificate');
+            const dateEl = document.getElementById('cert-date');
+            const nameEl = document.getElementById('cert-name');
+            const scoreEl = document.getElementById('cert-score');
+            
+            if (dateEl) dateEl.textContent = new Date().toLocaleDateString('ru-RU');
+            if (nameEl) nameEl.textContent = state.name;
+            if (scoreEl) scoreEl.textContent = state.score + " из 140";
+            
+            speak(`Поздравляю, ${state.name}! Ты настоящий эксперт по безопасности.`);
+        }
+
+        function askForName() {
+            const newName = prompt("Как тебя зовут? Впиши своё имя для сертификата:", "Друг");
+            state.name = newName ? newName.trim() : "Эксперт";
+            localStorage.setItem(STORAGE_KEYS.NAME, state.name);
+            speak(`Привет, ${state.name}! Давай учиться защищать себя.`);
+        }
+
+        function restartGame() {
+            if (!confirm('Начать обучение заново? Прогресс будет сброшен.')) return;
+            if (window.speechSynthesis) window.speechSynthesis.cancel();
+            clearProgress();
+            state.score = 0;
+            state.currentStage = '0';
+            if (dom.scoreEl) dom.scoreEl.textContent = '0';
+            document.querySelectorAll('button').forEach(btn => {
+                btn.disabled = false;
+                btn.classList.remove('selected', 'correct', 'wrong');
+            });
+            document.querySelectorAll('.explanation').forEach(el => el.classList.remove('show'));
+            document.querySelectorAll('.btn-continue').forEach(el => el.classList.remove('show'));
+            document.querySelectorAll('.btn-check').forEach(el => el.style.display = 'block');
+            askForName();
+            renderStage('0');
+        }
+    </script>
+</body>
+</html>
